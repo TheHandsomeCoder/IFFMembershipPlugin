@@ -121,8 +121,9 @@ class IffMembership_LifeCycle extends IffMembership_InstallIndicator {
      * @return void
      */
     public function addSettingsSubMenuPage() {
-        $this->addSettingsSubMenuPageToPluginsMenu();
+       // $this->addSettingsSubMenuPageToPluginsMenu();
         //$this->addSettingsSubMenuPageToSettingsMenu();
+       // $this->addSettingsSubMenuPageToTopLevelMenu();
     }
 
 
@@ -139,27 +140,12 @@ class IffMembership_LifeCycle extends IffMembership_InstallIndicator {
         return get_class($this) . 'Settings';
     }
 
-    protected function addSettingsSubMenuPageToPluginsMenu() {
-        $this->requireExtraPluginFiles();
-        $displayName = $this->getPluginDisplayName();
-        add_submenu_page('plugins.php',
-                         $displayName,
-                         $displayName,
-                         'manage_options',
-                         $this->getSettingsSlug(),
-                         array(&$this, 'settingsPage'));
-    }
+    
 
 
-    protected function addSettingsSubMenuPageToSettingsMenu() {
-        $this->requireExtraPluginFiles();
-        $displayName = $this->getPluginDisplayName();
-        add_options_page($displayName,
-                         $displayName,
-                         'manage_options',
-                         $this->getSettingsSlug(),
-                         array(&$this, 'settingsPage'));
-    }
+
+
+    
 
     /**
      * @param  $name string name of a database table

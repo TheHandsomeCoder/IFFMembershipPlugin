@@ -111,9 +111,9 @@ class FencerTable extends WP_List_Table {
         );
         
         //Return the title contents
-        return sprintf('%1$s <span style="color:silver">(id:%2$s)</span>%3$s',
+        return sprintf('%1$s <span style="color:silver">(IFF:%2$s)</span>%3$s',
             /*$1%s*/ $item['name'],
-            /*$2%s*/ $item['id'],
+            /*$2%s*/ $item['license_number'],
             /*$3%s*/ $this->row_actions($actions)
         );
     }
@@ -294,7 +294,8 @@ class FencerTable extends WP_List_Table {
                 wp_iffmembership_plugin_licence_type.display_name as 'licence_type',
                 wp_iffmembership_plugin_fencer_status.display_name as 'status' ,
                 wp_iffmembership_plugin_season.display_name as 'last_paid_season',
-                club
+                club,
+                license_number
 
                 from wp_iffmembership_plugin_fencers 
 
@@ -392,18 +393,105 @@ class FencerTable extends WP_List_Table {
  * @param string $which, helps you decide if you add the markup after (bottom) or before (top) the list
  */
 function extra_tablenav( $which ) {
-	if ( $which == "top" ){
+
+    global $wpdb; 
+
+
+    $sql = "select id, display_name from wp_iffmembership_plugin_fencer_status order by display_name;";
+    $statusList = $wpdb->get_results($sql,ARRAY_A);
+
+    $sql = "select id, display_name from wp_iffmembership_plugin_season order by display_name;";
+    $lastPaidList = $wpdb->get_results($sql,ARRAY_A);
+
+    $sql = "select id, display_name from wp_iffmembership_plugin_licence_type order by display_name;";
+    $licenceList = $wpdb->get_results($sql,ARRAY_A);
+    
+  
+
+    if ( $which == "top" ){
 		//The code that goes before the table is here
-		echo'<div class="alignleft actions bulkactions"><select name="Status">
-                <option value="-1" selected="selected">Fencer Status</option>
-	            <option value="2">Active</option>
-            </select></div>';
+		$this->statusDropdown($statusList);
+        $this->licenceDropdown($licenceList);
+        $this->lastPaidDropdown($lastPaidList);
+      
 	}
 	if ( $which == "bottom" ){
 		//The code that goes after the table is there
 		echo"Hi, I'm after the table";
 	}
 }
+
+function statusDropdown($statusList)
+{
+    $_filter =""; 
+   
+    if(isset($_GET["status"]))
+    {
+        $_filter = $_GET["status"];
+    }
+    
+  
+      echo'<div class="alignleft actions"><select name="status"><option value="-1">Fencer Status</option>';
+	    
+      foreach($statusList as $value):
+          $isSelected = $this->markSelected($value["id"], $_filter);
+          echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
+      endforeach;  
+                
+      echo'</select></div>';
+}
+
+function licenceDropdown($licenceList)
+{
+
+    $_filter =""; 
+   
+    if(isset($_GET["licence"]))
+    {
+        $_filter = $_GET["licence"];
+    }
+
+    echo'<div class="alignleft actions "><select name="licence"><option value="-1" >Licence Type</option>';
+	    
+      foreach($licenceList as $value):
+          $isSelected = $this->markSelected($value["id"], $_filter);
+        echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
+      endforeach;  
+                
+        echo'</select></div>';
+}
+
+function lastPaidDropdown($lastPaidList)
+{
+     $_filter =""; 
+   
+    if(isset($_GET["lastpaid"]))
+    {
+        $_filter = $_GET["lastpaid"];
+    }
+
+    echo'<div class="alignleft actions"><select name="lastpaid"><option value="-1">Last Paid</option>';
+	    
+      foreach($lastPaidList as $value):
+        $isSelected = $this->markSelected($value["id"], $_filter);
+        echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
+      endforeach;  
+                
+        echo'</select></div>';
+}
+
+function markSelected($id, $selected)
+{
+    if($id == $selected)
+    {
+        return 'selected="selected"';
+    }
+    else
+    {
+        return '';
+    }
+}
+
 
 
 }

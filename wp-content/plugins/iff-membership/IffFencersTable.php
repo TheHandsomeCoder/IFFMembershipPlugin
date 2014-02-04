@@ -289,7 +289,8 @@ class FencerTable extends WP_List_Table {
          * use sort and pagination data to build a custom query instead, as you'll
          * be able to use your precisely-queried data immediately.
          */
-       $sql = "select wp_iffmembership_plugin_fencers.id,
+       $whereClause = $this->whereQuery();
+       $sql = "select wp_iffmembership_plugin_fencers.id as 'id',
                 CONCAT_WS(' ',wp_iffmembership_plugin_fencers.first_name,wp_iffmembership_plugin_fencers.last_name) as 'name',
                 wp_iffmembership_plugin_licence_type.display_name as 'licence_type',
                 wp_iffmembership_plugin_fencer_status.display_name as 'status' ,
@@ -306,7 +307,11 @@ class FencerTable extends WP_List_Table {
                 ON wp_iffmembership_plugin_fencers.status = wp_iffmembership_plugin_fencer_status.id
 
                 JOIN wp_iffmembership_plugin_season
-                ON wp_iffmembership_plugin_fencers.last_season_paid_for = wp_iffmembership_plugin_season.id";
+                ON wp_iffmembership_plugin_fencers.last_season_paid_for = wp_iffmembership_plugin_season.id"
+                
+              ;
+
+
        
        
        $data = $wpdb->get_results($sql,ARRAY_A);
@@ -491,6 +496,38 @@ function markSelected($id, $selected)
         return '';
     }
 }
+
+function whereQuery()
+{
+  
+   $vars[] = NULL;   
+   $query = "";
+       
+   if(isset($_GET["s"]))
+   {
+        $_filter = $_GET["s"];
+        $queries[] = NULL;
+     
+        if ($_filter)
+        {
+            $queries[] = "club LIKE(%'$_filter'%)";
+            $queries[] = "first_name LIKE(%'$_filter'%)";
+            $queries[] = "last_name LIKE(%'$_filter'%)";
+        }      
+        $vars[]= '(' . implode(' OR ', $queries) . ')';
+   }
+
+   if (!empty($vars)) 
+   {
+    $query .= ' WHERE ' . implode(' AND ', $vars);
+   }
+   
+   error_log($query);
+   return $query;
+
+
+}
+
 
 
 

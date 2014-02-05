@@ -558,6 +558,30 @@ function whereQuery()
 
 }
 
+/**
+ * Generates the table navigation above or bellow the table and removes the
+ * _wp_http_referrer and _wpnonce because it generates a error about URL too large
+ * 
+ * @param string $which 
+ * @return void
+ */
+function display_tablenav( $which ) 
+{
+    ?>
+    <div class="tablenav <?php echo esc_attr( $which ); ?>">
+
+        <div class="alignleft actions">
+            <?php $this->bulk_actions(); ?>
+        </div>
+        <?php
+        $this->extra_tablenav( $which );
+        $this->pagination( $which );
+        ?>
+        <br class="clear" />
+    </div>
+    <?php
+}
+
 function renderPage()
 {
     $this->prepare_items();

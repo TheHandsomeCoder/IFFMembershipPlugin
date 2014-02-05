@@ -307,9 +307,7 @@ class FencerTable extends WP_List_Table {
                 ON wp_iffmembership_plugin_fencers.status = wp_iffmembership_plugin_fencer_status.id
 
                 JOIN wp_iffmembership_plugin_season
-                ON wp_iffmembership_plugin_fencers.last_season_paid_for = wp_iffmembership_plugin_season.id"
-                
-              ;
+                ON wp_iffmembership_plugin_fencers.last_season_paid_for = wp_iffmembership_plugin_season.id" . $whereClause;
 
 
        
@@ -500,32 +498,87 @@ function markSelected($id, $selected)
 function whereQuery()
 {
   
-   $vars[] = NULL;   
+   $vars;   
    $query = "";
        
    if(isset($_GET["s"]))
    {
         $_filter = $_GET["s"];
-        $queries[] = NULL;
+        $queries;
      
         if ($_filter)
         {
-            $queries[] = "club LIKE(%'$_filter'%)";
-            $queries[] = "first_name LIKE(%'$_filter'%)";
-            $queries[] = "last_name LIKE(%'$_filter'%)";
-        }      
-        $vars[]= '(' . implode(' OR ', $queries) . ')';
+            $queries[] = "club LIKE '%" .$_filter. "%'";
+            $queries[] = "first_name LIKE '%" .$_filter. "%'";
+            $queries[] = "last_name LIKE '%" .$_filter. "%'";
+        }  
+        
+         if (!empty($queries)) 
+         {
+             $vars[] = '(' . implode($queries, ' OR ') . ')';
+         }    
+       
    }
+
+    if(isset($_GET["lastpaid"]))
+    {
+        $_filter = $_GET["lastpaid"];
+        if( $_filter != -1)
+        {
+            $vars[] = '(last_season_paid_for = '.$_filter.')';
+        }
+    }
+
+    if(isset($_GET["licence"]))
+    {
+        $_filter = $_GET["licence"];
+        if( $_filter != -1)
+        {
+            $vars[] = '(licence_type = '.$_filter.')';
+        }
+    }
+
+    if(isset($_GET["status"]))
+    {
+        $_filter = $_GET["status"];
+        if( $_filter != -1)
+        {
+            $vars[] = '(status = '.$_filter.')';
+        }
+    }
+
 
    if (!empty($vars)) 
    {
     $query .= ' WHERE ' . implode(' AND ', $vars);
    }
-   
-   error_log($query);
+  
    return $query;
 
 
+}
+
+function renderPage()
+{
+    $this->prepare_items();
+    
+    ?>
+    <div class="wrap">
+        
+        <div id="icon-users" class="icon32"><br/></div>
+        <h2>Fencers <a href="#" class="add-new-h2">Add New</a></h2>        
+              
+        <!-- Forms are NOT created automatically, so you need to wrap the table in one to use features like bulk actions -->
+        <form id="fencers-filter" method="get">
+              <?php $this->search_box( "Search", "searchtext" ) ?>
+            <!-- For plugins, we also need to ensure that the form posts back to our current page -->
+            <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>" />
+            <!-- Now we can render the completed list table -->
+            <?php $this->display() ?>
+        </form>
+        
+    </div>
+    <?php
 }
 
 

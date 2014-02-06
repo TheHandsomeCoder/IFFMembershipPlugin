@@ -20,7 +20,7 @@ if(!class_exists('WP_List_Table')){
  * 
  * Our theme for this list table is going to be movies.
  */
-class FencerTable extends WP_List_Table {
+class LicenceTable extends WP_List_Table {
     
     
    
@@ -35,8 +35,8 @@ class FencerTable extends WP_List_Table {
                 
         //Set parent defaults
         parent::__construct( array(
-            'singular'  => 'fencer',     //singular name of the listed records
-            'plural'    => 'fencers',    //plural name of the listed records
+            'singular'  => 'licence',     //singular name of the listed records
+            'plural'    => 'licences',    //plural name of the listed records
             'ajax'      => false        //does this table support ajax?
         ) );
         
@@ -66,12 +66,8 @@ class FencerTable extends WP_List_Table {
      **************************************************************************/
     function column_default($item, $column_name){
         switch($column_name){
-            case 'name':
-            case 'status':
-            case 'licence_type':
-            case 'club':
-            case 'gender':
-            case 'last_paid_season':
+            case 'display_name':
+            case 'cost': 
                 return $item[$column_name];
             default:
                 return print_r($item,true); //Show the whole array for troubleshooting purposes
@@ -106,7 +102,7 @@ class FencerTable extends WP_List_Table {
         //Return the title contents
         return sprintf('%1$s <span style="color:silver">(IFF:%2$s)</span>%3$s',
             /*$1%s*/ $item['name'],
-            /*$2%s*/ $item['license_number'],
+            /*$2%s*/ $item['id'],
             /*$3%s*/ $this->row_actions($actions)
         );
     }
@@ -130,6 +126,19 @@ class FencerTable extends WP_List_Table {
     }
 
 
+     function column_is_public($item)
+     {
+         if($item['is_public'] == FALSE)
+         {
+             return "False";
+         }
+         else
+         {
+              return "True";
+         }        
+    }
+  
+
     /** ************************************************************************
      * REQUIRED! This method dictates the table's columns and titles. This should
      * return an array where the key is the column slug (and class) and the value 
@@ -146,12 +155,9 @@ class FencerTable extends WP_List_Table {
     function get_columns(){
         $columns = array(
             'cb'        => '<input type="checkbox" />', //Render a checkbox instead of text
-            'name'     => 'Name',
-            'status'    => 'Status',
-            'licence_type'  => 'Licence',
-            'club' => 'Club',
-            'gender' => 'Gender',
-            'last_paid_season' => 'Last Paid'
+            'display_name'     => 'Name',
+            'cost'    => 'Cost €',
+            'is_public'    => 'Purchasable'
         );
         return $columns;
     }
@@ -173,12 +179,9 @@ class FencerTable extends WP_List_Table {
      **************************************************************************/
     function get_sortable_columns() {
         $sortable_columns = array(
-            'name'     => array('name',false),     //true means it's already sorted
-            'status'    => array('status',false),
-            'licence_type'  => array('licence_type',false),
-            'club'  => array('club',false),
-            'gender'  => array('gender',false),
-            'last_paid_season'  => array('last_paid_season',false)
+            'display_name'     => array('display_name',false),     //true means it's already sorted
+            'cost'    => array('cost',false),
+            'is_public'    => array('is_public',false)           
         );
         return $sortable_columns;
     }
@@ -286,32 +289,8 @@ class FencerTable extends WP_List_Table {
          * be able to use your precisely-queried data immediately.
          */
        $whereClause = $this->whereQuery();
-       $sql = "select wp_iffmembership_plugin_fencers.id as 'id',
-                CONCAT_WS(' ',wp_iffmembership_plugin_fencers.first_name,wp_iffmembership_plugin_fencers.last_name) as 'name',
-                wp_iffmembership_plugin_licence_type.display_name as 'licence_type',
-                wp_iffmembership_plugin_fencer_status.display_name as 'status' ,
-                wp_iffmembership_plugin_season.display_name as 'last_paid_season',
-                club,
-                license_number,
-                wp_iffmembership_plugin_gender.display_name as 'gender'
-
-                from wp_iffmembership_plugin_fencers 
-
-                JOIN wp_iffmembership_plugin_licence_type
-                ON wp_iffmembership_plugin_fencers.licence_type = wp_iffmembership_plugin_licence_type.id
-
-                JOIN wp_iffmembership_plugin_fencer_status
-                ON wp_iffmembership_plugin_fencers.status = wp_iffmembership_plugin_fencer_status.id
-
-                JOIN wp_iffmembership_plugin_season
-                ON wp_iffmembership_plugin_fencers.last_season_paid_for = wp_iffmembership_plugin_season.id
-                
-                JOIN wp_iffmembership_plugin_gender
-                ON wp_iffmembership_plugin_fencers.gender = wp_iffmembership_plugin_gender.id
-                " . $whereClause;
-
-
-       
+       $sql = "select * from wp_iffmembership_plugin_licence_type" . $whereClause;
+             
        
        $data = $wpdb->get_results($sql,ARRAY_A);
     
@@ -328,7 +307,7 @@ class FencerTable extends WP_List_Table {
          * sorting technique would be unnecessary.
          */
         function usort_reorder($a,$b){
-            $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'name'; //If no sort, default to name
+            $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'display_name'; //If no sort, default to name
             $order = (!empty($_REQUEST['order'])) ? $_REQUEST['order'] : 'asc'; //If no order, default to asc
             $result = strcmp($a[$orderby], $b[$orderby]); //Determine sort order
             return ($order==='asc') ? $result : -$result; //Send final sort direction to usort
@@ -401,175 +380,28 @@ function extra_tablenav( $which ) {
     global $wpdb; 
 
 
-    $sql = "select id, display_name from wp_iffmembership_plugin_fencer_status order by display_name;";
-    $statusList = $wpdb->get_results($sql,ARRAY_A);
-
-    $sql = "select id, display_name from wp_iffmembership_plugin_season order by display_name;";
-    $lastPaidList = $wpdb->get_results($sql,ARRAY_A);
-
-    $sql = "select id, display_name from wp_iffmembership_plugin_licence_type order by display_name;";
-    $licenceList = $wpdb->get_results($sql,ARRAY_A);
-
-     $sql = "select id, display_name from wp_iffmembership_plugin_gender order by display_name;";
-     $genderList = $wpdb->get_results($sql,ARRAY_A);
+   
     
   
 
     if ( $which == "top" ){
-		//The code that goes before the table is here
-		$this->statusDropdown($statusList);
-        $this->licenceDropdown($licenceList);
-        $this->lastPaidDropdown($lastPaidList);
-        $this->genderDropdown($genderList);
+		//The code that goes before the table is here		
       
 	}
 	if ( $which == "bottom" ){
 		//The code that goes after the table is there
-		echo"Hi, I'm after the table";
+		
 	}
 }
 
-function statusDropdown($statusList)
-{
-    $_filter =""; 
-   
-    if(isset($_GET["status"]))
-    {
-        $_filter = $_GET["status"];
-    }
-    
-  
-      echo'<div class="alignleft actions"><select name="status"><option value="-1">Fencer Status</option>';
-	    
-      foreach($statusList as $value):
-          $isSelected = $this->markSelected($value["id"], $_filter);
-          echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
-      endforeach;  
-                
-      echo'</select></div>';
-}
 
-function licenceDropdown($licenceList)
-{
-
-    $_filter =""; 
-   
-    if(isset($_GET["licence"]))
-    {
-        $_filter = $_GET["licence"];
-    }
-
-    echo'<div class="alignleft actions "><select name="licence"><option value="-1" >Licence Type</option>';
-	    
-      foreach($licenceList as $value):
-          $isSelected = $this->markSelected($value["id"], $_filter);
-        echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
-      endforeach;  
-                
-        echo'</select></div>';
-}
-
-function lastPaidDropdown($lastPaidList)
-{
-     $_filter =""; 
-   
-    if(isset($_GET["lastpaid"]))
-    {
-        $_filter = $_GET["lastpaid"];
-    }
-
-    echo'<div class="alignleft actions"><select name="lastpaid"><option value="-1">Last Paid</option>';
-	    
-      foreach($lastPaidList as $value):
-        $isSelected = $this->markSelected($value["id"], $_filter);
-        echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
-      endforeach;  
-                
-        echo'</select></div>';
-}
-
-function genderDropdown($genderList)
-{
-     $_filter =""; 
-   
-    if(isset($_GET["gender"]))
-    {
-        $_filter = $_GET["gender"];
-    }
-
-    echo'<div class="alignleft actions"><select name="gender"><option value="-1">Gender</option>';
-	    
-      foreach($genderList as $value):
-        $isSelected = $this->markSelected($value["id"], $_filter);
-        echo '<option '.$isSelected.' value="'.$value["id"].'">'.$value["display_name"].'</option>'; //close your tags!!
-      endforeach;  
-                
-        echo'</select></div>';
-}
-
-function markSelected($id, $selected)
-{
-    if($id == $selected)
-    {
-        return 'selected="selected"';
-    }
-    else
-    {
-        return '';
-    }
-}
 
 function whereQuery()
 {
   
    $vars;   
-   $query = "";
-       
-   if(isset($_GET["s"]))
-   {
-        $_filter = $_GET["s"];
-        $queries;
-     
-        if ($_filter)
-        {
-            $queries[] = "club LIKE '%" .$_filter. "%'";
-            $queries[] = "first_name LIKE '%" .$_filter. "%'";
-            $queries[] = "last_name LIKE '%" .$_filter. "%'";
-        }  
-        
-         if (!empty($queries)) 
-         {
-             $vars[] = '(' . implode($queries, ' OR ') . ')';
-         }    
-       
-   }
-
-    if(isset($_GET["lastpaid"]))
-    {
-        $_filter = $_GET["lastpaid"];
-        if( $_filter != -1)
-        {
-            $vars[] = '(last_season_paid_for = '.$_filter.')';
-        }
-    }
-
-    if(isset($_GET["licence"]))
-    {
-        $_filter = $_GET["licence"];
-        if( $_filter != -1)
-        {
-            $vars[] = '(licence_type = '.$_filter.')';
-        }
-    }
-
-    if(isset($_GET["status"]))
-    {
-        $_filter = $_GET["status"];
-        if( $_filter != -1)
-        {
-            $vars[] = '(status = '.$_filter.')';
-        }
-    }
+   $query = "";   
+  
 
 
    if (!empty($vars)) 
@@ -615,7 +447,7 @@ function renderPage()
     <div class="wrap">
         
         <div id="icon-users" class="icon32"><br/></div>
-        <h2>Fencers <a href="#" class="add-new-h2">Add New</a></h2>        
+        <h2>Licences <a href="#" class="add-new-h2">Add New</a></h2>        
               
         <!-- Forms are NOT created automatically, so you need to wrap the table in one to use features like bulk actions -->
         <form id="fencers-filter" method="get">

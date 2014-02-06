@@ -3,6 +3,8 @@
 
 include_once('IffMembership_LifeCycle.php');
 include_once('IffFencersTable.php');
+include_once('IffSeasonsTable.php');
+include_once('IffLicenceTable.php');
 
 class IffMembership_Plugin extends IffMembership_LifeCycle {
 
@@ -83,6 +85,7 @@ class IffMembership_Plugin extends IffMembership_LifeCycle {
             id INT NOT NULL AUTO_INCREMENT,
             display_name TEXT,
             cost DECIMAL,
+            is_public TINYINT(1) DEFAULT 0,
             PRIMARY KEY  (id)
         );";
         dbDelta( $sql );
@@ -94,6 +97,15 @@ class IffMembership_Plugin extends IffMembership_LifeCycle {
             display_name TEXT,
             start_date DATE,
             end_date DATE,          
+            PRIMARY KEY  (id)
+         );";
+         dbDelta( $sql ); 
+
+        //create season table
+        $table_name4 = $this->prefixTableName("gender");
+        $sql = "CREATE TABLE $table_name4 (
+            id INT NOT NULL AUTO_INCREMENT,
+            display_name TEXT,                     
             PRIMARY KEY  (id)
          );";
          dbDelta( $sql ); 
@@ -124,12 +136,14 @@ class IffMembership_Plugin extends IffMembership_LifeCycle {
          dbDelta( $sql );
         
 
-        /* $sql = "ALTER TABLE $table_name10 ADD CONSTRAINT IF NOT EXISTS fencers_fk1 FOREIGN KEY (status) REFERENCES $table_name1(id);";
+         /**$sql = "ALTER TABLE $table_name10 ADD CONSTRAINT IF NOT EXISTS fencers_fk1 FOREIGN KEY (status) REFERENCES $table_name1(id);";
          $wpdb->query($sql);
          $sql = "ALTER TABLE $table_name10 ADD CONSTRAINT IF NOT EXISTS fencers_fk2 FOREIGN KEY (licence_type) REFERENCES $table_name2(id);";
          $wpdb->query($sql);
          $sql = "ALTER TABLE $table_name10 ADD CONSTRAINT IF NOT EXISTS fencers_fk3 FOREIGN KEY (last_season_paid_for) REFERENCES $table_name3(id);";
-         $wpdb->query($sql);    */     
+         $wpdb->query($sql);   
+         $sql = "ALTER TABLE $table_name10 ADD CONSTRAINT  fencers_fk4 FOREIGN KEY (gender) REFERENCES $table_name4(id);";
+         $wpdb->query($sql);  */   
 
     }
 
@@ -163,9 +177,11 @@ class IffMembership_Plugin extends IffMembership_LifeCycle {
   
 
 
-        add_action('admin_menu', array(&$this, 'addSettingsSubMenuPageToTopLevelMenu'));
-
-        // Example adding a script & style just for the options administration page
+        add_action('admin_menu', array(&$this, 'addTopLevelMenu'));
+        add_action('admin_menu', array(&$this, 'addSeasonsPage'));
+        add_action('admin_menu', array(&$this, 'addLicencePage'));
+      
+       // Example adding a script & style just for the options administration page
         // http://plugin.michael-simpson.com/?page_id=47
         //        if (strpos($_SERVER['REQUEST_URI'], $this->getSettingsSlug()) !== false) {
         //            wp_enqueue_script('my-script', plugins_url('/js/my-script.js', __FILE__));
@@ -193,7 +209,7 @@ class IffMembership_Plugin extends IffMembership_LifeCycle {
 
     }
 
-     public function addSettingsSubMenuPageToTopLevelMenu() {
+     function addTopLevelMenu() {
         $this->requireExtraPluginFiles();
         $displayName = $this->getPluginDisplayName();
         add_menu_page($displayName,
@@ -202,12 +218,42 @@ class IffMembership_Plugin extends IffMembership_LifeCycle {
                      'IFFMembership',
                       array(&$this, 'renderFencersTablePage'));
      }
+
+     
+     function addSeasonsPage() {
+         $this->requireExtraPluginFiles();
+         $displayName = $this->getPluginDisplayName();
+         add_submenu_page( 'IFFMembership', 'Seasons', 'Seasons',  'manage_options', 'seasonstable',  array(&$this, 'renderSeasonsTablePage') ); 
+       
+     }
+
+      function addLicencePage() {
+         $this->requireExtraPluginFiles();
+         $displayName = $this->getPluginDisplayName();
+         add_submenu_page( 'IFFMembership', 'Licence Types', 'Licence Types',  'manage_options', 'licencestable',  array(&$this, 'renderLicencesTablePage') ); 
+       
+     }
+
     
 
-    function renderFencersTablePage(){
-    
+    function renderFencersTablePage(){    
     //Create an instance of our package class...
     $testListTable = new FencerTable();
+    //Fetch, prepare, sort, and filter our data...
+    $testListTable->renderPage();
+    }
+
+    
+    function renderSeasonsTablePage(){    
+    //Create an instance of our package class...
+    $testListTable = new SeasonTable();
+    //Fetch, prepare, sort, and filter our data...
+    $testListTable->renderPage();
+    }
+
+     function renderLicencesTablePage(){    
+    //Create an instance of our package class...
+    $testListTable = new LicenceTable();
     //Fetch, prepare, sort, and filter our data...
     $testListTable->renderPage();
     }
